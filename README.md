@@ -37,20 +37,11 @@ device_tracker:
     password: !secret tplink_router_password
 ```
 
-{% configuration %}
-host:
-  description: The IP address of your router, e.g., 192.168.1.1.
-  required: true
-  type: string
-username:
-  description: The username of an user with administrative privileges, usually *admin*. The Archer D9 last firmware does not require a username.
-  required: true
-  type: string
-password:
-  description: The password for your given admin account.
-  required: true
-  type: string
-{% endconfiguration %}
+Configuration variables:
+
+- **host** (*Required*): The IP address of your router, e.g., 192.168.1.1.
+- **username** (*Required*): The username of an user with administrative privileges, usually *admin*. The Archer D9 last firmware does not require a username.
+- **password** (*Required*): The password for your given admin account.
 
 For Archer C9 models running firmware version 150811 or later please use the encrypted password you can retrieve like this:
 
