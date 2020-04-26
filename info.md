@@ -1,4 +1,5 @@
 # TPLink Router device tracker for Home Assistant
+[![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg)](https://hacs.xyz/)
 
 The `tplink_router` platform for `device_tracker` integration allows you to detect presence by looking at connection devices to a [TP-Link](https://www.tp-link.com) wireless router.
 
