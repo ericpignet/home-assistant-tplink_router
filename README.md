@@ -5,17 +5,6 @@ The `tplink_router` platform for `device_tracker` integration allows you to dete
 
 It was part of the official `tplink` integration in the past but was [removed](https://github.com/home-assistant/core/pull/27936) from Home Assistant.
 
-Devices originally supported include the following:
-
-- Archer C7 firmware version 150427
-- Archer C9 firmware version 150811
-- EAP-225 AP with latest firmware version
-- Archer D9 firmware version 0.9.1 0.1 v0041.0 Build 160224 Rel.59129n
-
-Additional devices added since the removal from Home Assistant:
-
-- TPLink N600
-
 ## Installation
 Recommended: use [HACS](https://hacs.xyz/).
 
@@ -25,7 +14,7 @@ Manual: copy `custom_components/tplink_router` folder into your `custom_componen
 TP-Link devices typically only allow one login at a time to the admin console.  This integration will count towards your one allowed login. Depending on how aggressively you configure device_tracker you may not be able to access the admin console of your TP-Link device without first stopping Home Assistant. Home Assistant takes a few seconds to login, collect data, and log out. If you log into the admin console manually, remember to log out so that Home Assistant can log in again.
 </div>
 
-### Configuration
+## Configuration
 
 To enable this device tracker, add the following lines to your `configuration.yaml`:
 
@@ -56,3 +45,20 @@ For Archer C9 models running firmware version 150811 or later please use the enc
 See the [device tracker integration page](/integrations/device_tracker/) for instructions how to configure the people to be tracked.
 
 For Archer D9 model the default IP is 192.168.1.1, the username is not necessary and you can leave that field blank.
+
+## Supported devices
+
+Devices originally supported include the following:
+
+- Archer C7 firmware version 150427
+- Archer C9 firmware version 150811
+- EAP-225 AP with latest firmware version
+- Archer D9 firmware version 0.9.1 0.1 v0041.0 Build 160224 Rel.59129n
+
+Additional devices added since the removal from Home Assistant:
+
+- TPLink N600 with latest firmware
+
+If your device is not in the list, you can still give it a try and let me know if it works or not, I'll update the documentation.
+
+*Disclaimer*: I cannot add support for devices I don't own, unless you provide me with a list of HTTP requests leading to the page listing MAC address of connected devices, including authentication, and an example of the page.
