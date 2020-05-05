@@ -10,7 +10,6 @@ from Crypto.Cipher import PKCS1_v1_5
 import binascii
 import string, random
 import time
-import requests
 
 
 from aiohttp.hdrs import (
