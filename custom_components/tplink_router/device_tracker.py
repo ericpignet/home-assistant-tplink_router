@@ -5,6 +5,13 @@ from datetime import datetime
 import hashlib
 import logging
 import re
+from Crypto.PublicKey.RSA import construct
+from Crypto.Cipher import PKCS1_v1_5
+import binascii
+import string, random
+import time
+import requests
+
 
 from aiohttp.hdrs import (
     ACCEPT,
@@ -549,12 +556,12 @@ class Tplink6DeviceScanner(TplinkDeviceScanner):
         username = self.username.encode('utf-8')
         password = self.password.encode('utf-8')
     
-        b64pass = b64encode(password)
+        b64pass = base64.b64encode(password)
         encryptedUsername = self.pubkey.encrypt(username)
         encryptedPassword = self.pubkey.encrypt(b64pass)
     
-        base16username = b16encode(encryptedUsername).decode('utf-8').lower()
-        base16password = b16encode(encryptedPassword).decode('utf-8').lower()
+        base16username = base64.b16encode(encryptedUsername).decode('utf-8').lower()
+        base16password = base64.b16encode(encryptedPassword).decode('utf-8').lower()
         
         referer = 'http://{}'.format(self.host)
         url = 'http://{}/cgi/login?UserName={}&Passwd={}&Action=1&LoginStatus=0'.format(self.host, base16username, base16password)
