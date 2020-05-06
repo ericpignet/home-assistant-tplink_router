@@ -25,7 +25,8 @@ device_tracker:
 - Archer C9 firmware version 150811
 - EAP-225 AP with latest firmware version
 - Archer D9 firmware version 0.9.1 0.1 v0041.0 Build 160224 Rel.59129n
-- TPLink N600 with latest firmware (added since removal of the integration from Home Assistant)
+- TPLink N600 with latest firmware (added since removal of the integration from Home Assistant
+- VR600 with latest firmware (added since removal of the integration from Home Assistant)
 
 If your device is not in the list, you can still give it a try and let me know if it works or not, I'll update the documentation.
 
