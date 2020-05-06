@@ -626,22 +626,14 @@ class Tplink6DeviceScanner(TplinkDeviceScanner):
         
         return True
 
-    def _update_info(self):
-        """Ensure the information from the TP-Link router is up to date.
-        Return boolean if scanning successful.
-        """
-        if (self.jsessionId == '') or (self.token == ''):
-            self._get_auth_tokens()
-
-        _LOGGER.info("Loading wireless clients...")
-
+    def _get_mac_results(self):
         referer = 'http://{}'.format(self.host)
         headers= {
             'TokenID': self.token,
             REFERER: referer,
             COOKIE: 'JSESSIONID=' + self.jsessionId
             }
-    
+            
         mac_results = []
     
         # Check both the 2.4GHz and 5GHz client lists.
@@ -675,4 +667,37 @@ class Tplink6DeviceScanner(TplinkDeviceScanner):
             mac_results.extend(self.parse_macs_colons.findall(page.text))
     
         self.last_results = mac_results
+        return True
+        
+   
+    def _update_info(self):
+        """Ensure the information from the TP-Link router is up to date.
+        Return boolean if scanning successful.
+        """
+        
+        if (self.jsessionId == '') or (self.token == ''):
+          gotToken = self._get_auth_tokens()
+          if not gotToken:
+            # Retry
+            _LOGGER.info("Failed to get AuthTokens. Retrying in 3 secs.")
+            time.sleep(3)
+            gotToken = self._get_auth_tokens()
+        else:
+          gotToken = True
+
+        if not gotToken:
+          """ In case of failure - force re-login """
+          self.jsessionId = ''
+          self.token = ''
+          return False
+        
+        _LOGGER.info("Loading wireless clients...")
+        
+        macResults = self._get_mac_results()
+        if not macResults:
+          """ In case of failure - force re-login """
+          self.jsessionId = ''
+          self.token = ''
+          return False
+          
         return True
