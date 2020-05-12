@@ -497,8 +497,11 @@ class VR600TplinkDeviceScanner(TplinkDeviceScanner):
         ee = self._get_field_from_router_response(response.text, 'ee')
         nn = self._get_field_from_router_response(response.text, 'nn')
 
-        e = int(ee, 16)
-        n = int(nn, 16)  #snipped for brevity
+        try:
+            e = int(ee, 16)
+            n = int(nn, 16)  #snipped for brevity
+        except ValueError:
+            return False
 
         pubkey = construct((n, e))
         self.pubkey = PKCS1_v1_5.new(pubkey)
@@ -568,8 +571,8 @@ class VR600TplinkDeviceScanner(TplinkDeviceScanner):
 
     def _get_auth_tokens(self):
         """Retrieve auth tokens from the router."""
-        _LOGGER.info("Retrieving PublicKey...")
 
+        _LOGGER.info("Retrieving PublicKey...")
         pubkey = self._get_pub_key()
         if not pubkey:
             return False
