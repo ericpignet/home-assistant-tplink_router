@@ -11,7 +11,6 @@ import binascii
 import string, random
 import time
 
-
 from aiohttp.hdrs import (
     ACCEPT,
     COOKIE,
@@ -47,10 +46,13 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 
 def get_scanner(hass, config):
     """Validate the configuration and return a TP-Link scanner."""
-    for cls in [Tplink6DeviceScanner, Tplink5DeviceScanner, 
-                Tplink4DeviceScanner, Tplink3DeviceScanner, 
-                Tplink2DeviceScanner, Tplink1DeviceScanner, 
-                TplinkDeviceScanner]:
+    for cls in [VR600TplinkDeviceScanner,
+                EAP225TplinkDeviceScanner,
+                N600TplinkDeviceScanner,
+                C7TplinkDeviceScanner,
+                C9TplinkDeviceScanner,
+                OldC9TplinkDeviceScanner,
+                OriginalTplinkDeviceScanner]:
         scanner = cls(config[DOMAIN])
         if scanner.success_init:
             return scanner
@@ -59,10 +61,10 @@ def get_scanner(hass, config):
 
 
 class TplinkDeviceScanner(DeviceScanner):
-    """This class queries a wireless router running TP-Link firmware."""
+    """Abstract parent class for all TPLink device scanners."""
 
     def __init__(self, config):
-        """Initialize the scanner."""
+        """Generic scanner initialization."""
         host = config[CONF_HOST]
         username, password = config[CONF_USERNAME], config[CONF_PASSWORD]
 
@@ -87,15 +89,28 @@ class TplinkDeviceScanner(DeviceScanner):
 
     # pylint: disable=no-self-use
     def get_device_name(self, device):
-        """Get firmware doesn't save the name of the wireless device."""
+        """Firmware doesn't save the name of the wireless device.
+        Home Assistant will default to MAC address."""
         return None
+
+    def get_base64_cookie_string(self):
+        """Encode Base 64 authentication string for some scanners."""
+        username_password = '{}:{}'.format(self.username, self.password)
+        b64_encoded_username_password = base64.b64encode(
+            username_password.encode('ascii')
+        ).decode('ascii')
+        return 'Authorization=Basic {}'.format(b64_encoded_username_password)
+
+
+class OriginalTplinkDeviceScanner(TplinkDeviceScanner):
+    """This class queries a wireless router running TP-Link firmware.
+    Oldest firmware supported by this integration."""
 
     def _update_info(self):
         """Ensure the information from the TP-Link router is up to date.
-
         Return boolean if scanning successful.
         """
-        _LOGGER.info("Loading wireless clients...")
+        _LOGGER.info("[Original] Loading wireless clients...")
 
         url = 'http://{}/userRpm/WlanStationRpm.htm'.format(self.host)
         referer = 'http://{}'.format(self.host)
@@ -111,35 +126,15 @@ class TplinkDeviceScanner(DeviceScanner):
 
         return False
 
-    def get_base64_cookie_string(self):
-        """Encode Base 64 authentication string for Tplink1/Tplink2."""
-        username_password = '{}:{}'.format(self.username, self.password)
-        b64_encoded_username_password = base64.b64encode(
-            username_password.encode('ascii')
-        ).decode('ascii')
-        return 'Authorization=Basic {}'.format(b64_encoded_username_password)
 
-
-class Tplink1DeviceScanner(TplinkDeviceScanner):
+class N600TplinkDeviceScanner(TplinkDeviceScanner):
     """This class queries TP-Link N600 routers and similar models."""
-
-    def scan_devices(self):
-        """Scan for new devices and return a list with found device IDs."""
-        self._update_info()
-        return self.last_results
-
-    # pylint: disable=no-self-use
-    def get_device_name(self, device):
-        """Get firmware doesn't save the name of the wireless device."""
-        return None
 
     def _update_info(self):
         """Ensure the information from the TP-Link router is up to date.
-
         Return boolean if scanning successful.
         """
-        _LOGGER.info("Loading wireless clients...")
-        _LOGGER.info("ERIC 1")
+        _LOGGER.info("[N600] Loading wireless clients...")
 
         # Router uses Authorization cookie instead of header.
         cookie = self.get_base64_cookie_string()
@@ -184,8 +179,8 @@ class Tplink1DeviceScanner(TplinkDeviceScanner):
         return False
 
 
-class Tplink2DeviceScanner(TplinkDeviceScanner):
-    """This class queries a router with newer version of TP-Link firmware."""
+class OldC9TplinkDeviceScanner(TplinkDeviceScanner):
+    """This class queries a C9 router with old firmware."""
 
     def scan_devices(self):
         """Scan for new devices and return a list with found device IDs."""
@@ -199,10 +194,9 @@ class Tplink2DeviceScanner(TplinkDeviceScanner):
 
     def _update_info(self):
         """Ensure the information from the TP-Link router is up to date.
-
         Return boolean if scanning successful.
         """
-        _LOGGER.info("Loading wireless clients...")
+        _LOGGER.info("[OldC9] Loading wireless clients...")
 
         url = 'http://{}/data/map_access_wireless_client_grid.json' \
             .format(self.host)
@@ -233,14 +227,14 @@ class Tplink2DeviceScanner(TplinkDeviceScanner):
         return False
 
 
-class Tplink3DeviceScanner(TplinkDeviceScanner):
+class C9TplinkDeviceScanner(TplinkDeviceScanner):
     """This class queries the Archer C9 router with version 150811 or high."""
 
     def __init__(self, config):
         """Initialize the scanner."""
         self.stok = ''
         self.sysauth = ''
-        super(Tplink3DeviceScanner, self).__init__(config)
+        super(C9TplinkDeviceScanner, self).__init__(config)
 
     def scan_devices(self):
         """Scan for new devices and return a list with found device IDs."""
@@ -248,10 +242,8 @@ class Tplink3DeviceScanner(TplinkDeviceScanner):
         self._log_out()
         return self.last_results.keys()
 
-    # pylint: disable=no-self-use
     def get_device_name(self, device):
         """Get the firmware doesn't save the name of the wireless device.
-
         We are forced to use the MAC address as name here.
         """
         return self.last_results.get(device)
@@ -285,13 +277,12 @@ class Tplink3DeviceScanner(TplinkDeviceScanner):
 
     def _update_info(self):
         """Ensure the information from the TP-Link router is up to date.
-
         Return boolean if scanning successful.
         """
+        _LOGGER.info("[C9] Loading wireless clients...")
+
         if (self.stok == '') or (self.sysauth == ''):
             self._get_auth_tokens()
-
-        _LOGGER.info("Loading wireless clients...")
 
         url = ('http://{}/cgi-bin/luci/;stok={}/admin/wireless?'
                'form=statistics').format(self.host, self.stok)
@@ -343,24 +334,14 @@ class Tplink3DeviceScanner(TplinkDeviceScanner):
         self.sysauth = ''
 
 
-class Tplink4DeviceScanner(TplinkDeviceScanner):
+class C7TplinkDeviceScanner(TplinkDeviceScanner):
     """This class queries an Archer C7 router with TP-Link firmware 150427."""
 
     def __init__(self, config):
         """Initialize the scanner."""
         self.credentials = ''
         self.token = ''
-        super(Tplink4DeviceScanner, self).__init__(config)
-
-    def scan_devices(self):
-        """Scan for new devices and return a list with found device IDs."""
-        self._update_info()
-        return self.last_results
-
-    # pylint: disable=no-self-use
-    def get_device_name(self, device):
-        """Get the name of the wireless device."""
-        return None
+        super(C7TplinkDeviceScanner, self).__init__(config)
 
     def _get_auth_tokens(self):
         """Retrieve auth tokens from the router."""
@@ -395,13 +376,12 @@ class Tplink4DeviceScanner(TplinkDeviceScanner):
 
     def _update_info(self):
         """Ensure the information from the TP-Link router is up to date.
-
         Return boolean if scanning successful.
         """
+        _LOGGER.info("[C7] Loading wireless clients...")
+
         if (self.credentials == '') or (self.token == ''):
             self._get_auth_tokens()
-
-        _LOGGER.info("Loading wireless clients...")
 
         mac_results = []
 
@@ -425,7 +405,7 @@ class Tplink4DeviceScanner(TplinkDeviceScanner):
         return True
 
 
-class Tplink5DeviceScanner(TplinkDeviceScanner):
+class EAP225TplinkDeviceScanner(TplinkDeviceScanner):
     """This class queries a TP-Link EAP-225 AP with newer TP-Link FW."""
 
     def scan_devices(self):
@@ -433,17 +413,11 @@ class Tplink5DeviceScanner(TplinkDeviceScanner):
         self._update_info()
         return self.last_results.keys()
 
-    # pylint: disable=no-self-use
-    def get_device_name(self, device):
-        """Get firmware doesn't save the name of the wireless device."""
-        return None
-
     def _update_info(self):
         """Ensure the information from the TP-Link AP is up to date.
-
         Return boolean if scanning successful.
         """
-        _LOGGER.info("Loading wireless clients...")
+        _LOGGER.info("[EAP225] Loading wireless clients...")
 
         base_url = 'http://{}'.format(self.host)
 
@@ -502,7 +476,7 @@ class Tplink5DeviceScanner(TplinkDeviceScanner):
 
         return False
 
-class Tplink6DeviceScanner(TplinkDeviceScanner):
+class VR600TplinkDeviceScanner(TplinkDeviceScanner):
     """This class queries an Archer VR600 router with TP-Link firmware."""
 
     def __init__(self, config):
@@ -510,19 +484,8 @@ class Tplink6DeviceScanner(TplinkDeviceScanner):
         self.pubkey = ''
         self.jsessionId = ''
         self.token = ''
-        super(Tplink6DeviceScanner, self).__init__(config)
+        super(VR600TplinkDeviceScanner, self).__init__(config)
 
-    def scan_devices(self):
-        """Scan for new devices and return a list with found device IDs."""
-        self._update_info()
-        return self.last_results
-
-    # pylint: disable=no-self-use
-    def get_device_name(self, device):
-        """Get the name of the wireless device."""
-        return None
-
-        
     def _get_pub_key(self):
         # Get the modulu and exponent from the router
         url = 'http://{}/cgi/getParm'.format(self.host)
@@ -530,18 +493,18 @@ class Tplink6DeviceScanner(TplinkDeviceScanner):
         response = requests.post(url, headers={ 'REFERER': referer})
         if not response.status_code == 200:
             return False
-        
+
         ee = self._get_field_from_router_response(response.text, 'ee')
         nn = self._get_field_from_router_response(response.text, 'nn')
-    
+
         e = int(ee, 16)
         n = int(nn, 16)  #snipped for brevity
-        
+
         pubkey = construct((n, e))
         self.pubkey = PKCS1_v1_5.new(pubkey)
-        
+
         return True
-    
+
     def _get_field_from_router_response(self, rText, key):
         lines = rText.split('\n')
         for line in lines:
@@ -549,71 +512,68 @@ class Tplink6DeviceScanner(TplinkDeviceScanner):
                 # var ee="010101" => "010101"
                 return line.split('=\"')[1].split('\";')[0]
         return ''
-    
-    
+
     def _get_jsession_id(self):
         username = self.username.encode('utf-8')
         password = self.password.encode('utf-8')
-    
+
         b64pass = base64.b64encode(password)
         encryptedUsername = self.pubkey.encrypt(username)
         encryptedPassword = self.pubkey.encrypt(b64pass)
-    
+
         base16username = base64.b16encode(encryptedUsername).decode('utf-8').lower()
         base16password = base64.b16encode(encryptedPassword).decode('utf-8').lower()
-        
+
         referer = 'http://{}'.format(self.host)
         url = 'http://{}/cgi/login?UserName={}&Passwd={}&Action=1&LoginStatus=0'.format(self.host, base16username, base16password)
-    
+
         randomSessionNum = self._get_random_alphaNumeric_string(15)
-    
+
         headers= { REFERER: referer }
-    
+
         response = requests.post(url, headers=headers)
-        
+
         if not response.status_code == 200:
             _LOGGER.error("Error %s from router", page.response)
             return False
-          
+
         self.jsessionId = dict(response.cookies)['JSESSIONID']
         return True
-    
+
     def _get_random_alphaNumeric_string(self, stringLength=15):
         lettersAndDigits = string.ascii_letters + string.digits
         return ''.join((random.choice(lettersAndDigits) for i in range(stringLength)))
-    
+
     def _get_token(self):
         url = 'http://{}/'.format(self.host)
         referer = 'http://{}'.format(self.host)
-        
+
         headers= {
             REFERER: referer,
             COOKIE: 'loginErrorShow=1; JSESSIONID='+self.jsessionId,
             }
-        
+
         cookies = {'JSESSIONID': self.jsessionId}
         response = requests.get(url, headers=headers, cookies=cookies)
-        
+
         if not response.status_code == 200:
             _LOGGER.error("Error %s from router", page.response)
             return False
-          
-        
+
         split = response.text.index('var token=') + len('var token=\"') 
         token = response.text[split:split+30]
-        
+
         self.token = token
         return True
-        
 
     def _get_auth_tokens(self):
         """Retrieve auth tokens from the router."""
         _LOGGER.info("Retrieving PublicKey...")
-        
+
         pubkey = self._get_pub_key()
         if not pubkey:
             return False
-        
+
         _LOGGER.info("Retrieving JSessionID...")
         jsessionId = self._get_jsession_id()
         if not jsessionId:
@@ -623,7 +583,7 @@ class Tplink6DeviceScanner(TplinkDeviceScanner):
         token = self._get_token()
         if not token:
             return False
-        
+
         return True
 
     def _get_mac_results(self):
@@ -633,12 +593,12 @@ class Tplink6DeviceScanner(TplinkDeviceScanner):
             REFERER: referer,
             COOKIE: 'JSESSIONID=' + self.jsessionId
             }
-            
+
         mac_results = []
-    
+
         # Check both the 2.4GHz and 5GHz client lists.
         for clients_frequency in ('1', '2'):
-    
+
             # Refresh associated clients.
             page = requests.post(
                 'http://{}/cgi?7'.format(self.host),
@@ -650,7 +610,7 @@ class Tplink6DeviceScanner(TplinkDeviceScanner):
             if not page.status_code == 200:
                 _LOGGER.error("Error %s from router", page.status_code)
                 return False
-    
+
             # Retrieve associated clients.
             page = requests.post(
                 'http://{}/cgi?6'.format(self.host),
@@ -663,41 +623,38 @@ class Tplink6DeviceScanner(TplinkDeviceScanner):
             if not page.status_code == 200:
                 _LOGGER.error("Error %s from router", page.status_code)
                 return False
-    
+
             mac_results.extend(self.parse_macs_colons.findall(page.text))
     
         self.last_results = mac_results
         return True
-        
-   
+
     def _update_info(self):
         """Ensure the information from the TP-Link router is up to date.
         Return boolean if scanning successful.
         """
-        
+        _LOGGER.info("[VR600] Loading wireless clients...")
+
         if (self.jsessionId == '') or (self.token == ''):
-          gotToken = self._get_auth_tokens()
-          if not gotToken:
-            # Retry
-            _LOGGER.info("Failed to get AuthTokens. Retrying in 3 secs.")
-            time.sleep(3)
             gotToken = self._get_auth_tokens()
+            if not gotToken:
+                # Retry
+                _LOGGER.info("Failed to get AuthTokens. Retrying in 3 secs.")
+                time.sleep(3)
+                gotToken = self._get_auth_tokens()
         else:
-          gotToken = True
+            gotToken = True
 
         if not gotToken:
-          """ In case of failure - force re-login """
-          self.jsessionId = ''
-          self.token = ''
-          return False
-        
-        _LOGGER.info("Loading wireless clients...")
-        
+            """ In case of failure - force re-login """
+            self.jsessionId = ''
+            self.token = ''
+            return False
+
         macResults = self._get_mac_results()
         if not macResults:
-          """ In case of failure - force re-login """
-          self.jsessionId = ''
-          self.token = ''
-          return False
-          
+            """ In case of failure - force re-login """
+            self.jsessionId = ''
+            self.token = ''
+            return False
         return True
