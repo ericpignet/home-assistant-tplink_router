@@ -25,12 +25,13 @@ device_tracker:
 - Archer C9 firmware version 150811
 - EAP-225 AP with latest firmware version
 - Archer D9 firmware version 0.9.1 0.1 v0041.0 Build 160224 Rel.59129n
-- TPLink N600 with latest firmware (added since removal of the integration from Home Assistant
-- VR600 with latest firmware (added since removal of the integration from Home Assistant)
+- TPLink N600 with latest firmware
+- VR600 with latest firmware
+- TL-WR840N 
 
 If your device is not in the list, you can still give it a try and let me know if it works or not, I'll update the documentation.
 
-*Disclaimer*: I cannot add support for devices I don't own, unless you provide me with a list of HTTP requests leading to the page listing MAC address of connected devices, including authentication, and an example of the page.
+*Disclaimer*: I cannot add support for devices I don't own, but external contributions are definitely welcome. Feel free to open an issue on Github if you want to help.
 
 ## Documentation
 See [README](https://github.com/ericpignet/home-assistant-tplink_router/blob/master/README.md) for full documentation.

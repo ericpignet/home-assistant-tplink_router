@@ -128,7 +128,7 @@ class OriginalTplinkDeviceScanner(TplinkDeviceScanner):
 
 
 class N600TplinkDeviceScanner(TplinkDeviceScanner):
-    """This class queries TP-Link N600 routers and similar models."""
+    """This class queries TP-Link N600 router and TL-WR840N router."""
 
     def _update_info(self):
         """Ensure the information from the TP-Link router is up to date.

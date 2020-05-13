@@ -59,6 +59,7 @@ Additional devices added since the removal from Home Assistant:
 
 - TPLink N600 with latest firmware
 - TPLink VR600 with latest firmware
+- TL-WR840N
 
 If your device is not in the list, you can still give it a try and let me know if it works or not, I'll update the documentation.
 
