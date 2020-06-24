@@ -270,7 +270,7 @@ class C9TplinkDeviceScanner(TplinkDeviceScanner):
             self.sysauth = regex_result.group(1)
             _LOGGER.info(self.sysauth)
             return True
-        except (ValueError, KeyError) as _:
+        except (ValueError, KeyError, AttributeError) as _:
             _LOGGER.error("Couldn't fetch auth tokens! Response was: %s",
                           response.text)
             return False
