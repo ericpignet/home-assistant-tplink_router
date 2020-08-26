@@ -28,6 +28,7 @@ device_tracker:
 - TPLink N600 with latest firmware
 - VR600 with latest firmware
 - TL-WR840N 
+- TL-WDR4900
 
 If your device is not in the list, you can still give it a try and let me know if it works or not, I'll update the documentation.
 
