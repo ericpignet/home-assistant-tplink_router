@@ -112,13 +112,20 @@ class OriginalTplinkDeviceScanner(TplinkDeviceScanner):
         """
         _LOGGER.info("[Original] Loading wireless clients...")
 
+        # Check 2.4GHz band
         url = 'http://{}/userRpm/WlanStationRpm.htm'.format(self.host)
         referer = 'http://{}'.format(self.host)
         page = requests.get(
             url, auth=(self.username, self.password),
             headers={REFERER: referer}, timeout=4)
+        
+        # Check 5Ghz band (if available)
+        url = 'http://{}/userRpm/WlanStationRpm_5g.htm'.format(self.host)
+        page2 = requests.get(
+            url, auth=(self.username, self.password),
+            headers={REFERER: referer}, timeout=4)
 
-        result = self.parse_macs_hyphens.findall(page.text)
+        result = self.parse_macs_hyphens.findall(page.text + ' ' + page2.text)
 
         if result:
             self.last_results = [mac.replace("-", ":") for mac in result]
