@@ -10,6 +10,7 @@ from Crypto.Cipher import PKCS1_v1_5
 import binascii
 import string, random
 import time
+import urllib.parse
 
 from aiohttp.hdrs import (
     ACCEPT,
@@ -112,17 +113,22 @@ class OriginalTplinkDeviceScanner(TplinkDeviceScanner):
         """
         _LOGGER.info("[Original] Loading wireless clients...")
 
+        authcookie = 'Basic ' + str(base64.b64encode(f'{self.username}:{self.password}'.encode('utf-8')), 'utf-8')
+        authcookiestr = urllib.parse.quote(authcookie)
+
         # Check 2.4GHz band
         url = 'http://{}/userRpm/WlanStationRpm.htm'.format(self.host)
         referer = 'http://{}'.format(self.host)
         page = requests.get(
             url, auth=(self.username, self.password),
+            cookies={"Authorization":authcookiestr},
             headers={REFERER: referer}, timeout=4)
         
         # Check 5Ghz band (if available)
         url = 'http://{}/userRpm/WlanStationRpm_5g.htm'.format(self.host)
         page2 = requests.get(
             url, auth=(self.username, self.password),
+            cookies={"Authorization":authcookiestr},
             headers={REFERER: referer}, timeout=4)
 
         result = self.parse_macs_hyphens.findall(page.text + ' ' + page2.text)

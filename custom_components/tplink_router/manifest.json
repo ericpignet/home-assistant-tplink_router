@@ -4,6 +4,7 @@
     "documentation": "https://github.com/ericpignet/home-assistant-tplink_router",
     "requirements": [],
     "dependencies": [],
-    "codeowners": ["@ericpignet"]
+    "codeowners": ["@ericpignet"],
+    "version": "0.0.7"
   }
   
