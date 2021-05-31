@@ -1,6 +1,7 @@
 {
     "domain": "tplink_router",
     "name": "TPLink Router device tracker",
+    "version": "0.0.6",
     "documentation": "https://github.com/ericpignet/home-assistant-tplink_router",
     "requirements": [],
     "dependencies": [],
