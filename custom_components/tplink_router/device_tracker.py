@@ -46,13 +46,15 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 
 def get_scanner(hass, config):
     """Validate the configuration and return a TP-Link scanner."""
-    for cls in [VR600TplinkDeviceScanner,
+    for cls in [XDRSeriesTplinkDeviceScanner,
+                VR600TplinkDeviceScanner,
                 EAP225TplinkDeviceScanner,
                 N600TplinkDeviceScanner,
                 C7TplinkDeviceScanner,
                 C9TplinkDeviceScanner,
                 OldC9TplinkDeviceScanner,
-                OriginalTplinkDeviceScanner]:
+                OriginalTplinkDeviceScanner
+                ]:
         scanner = cls(config[DOMAIN])
         if scanner.success_init:
             return scanner
@@ -78,7 +80,8 @@ class TplinkDeviceScanner(DeviceScanner):
         self.host = host
         self.username = username
         self.password = password
-
+        
+        self.mac2name = None
         self.last_results = {}
         self.success_init = self._update_info()
 
@@ -89,8 +92,12 @@ class TplinkDeviceScanner(DeviceScanner):
 
     # pylint: disable=no-self-use
     def get_device_name(self, device):
-        """Firmware doesn't save the name of the wireless device.
-        Home Assistant will default to MAC address."""
+        """Support for device name feature. (only implemented in XDR Series)"""
+        
+        if device:
+            self._get_device_name()
+            return self.mac2name.get(device)
+    
         return None
 
     def get_base64_cookie_string(self):
@@ -570,7 +577,7 @@ class VR600TplinkDeviceScanner(TplinkDeviceScanner):
             _LOGGER.error("Error %s from router", page.response)
             return False
 
-        split = response.text.index('var token=') + len('var token=\"') 
+        split = response.text.index('var token=') + len('var token=\"')
         token = response.text[split:split+30]
 
         self.token = token
@@ -668,3 +675,86 @@ class VR600TplinkDeviceScanner(TplinkDeviceScanner):
             self.token = ''
             return False
         return True
+
+
+class XDRSeriesTplinkDeviceScanner(TplinkDeviceScanner):
+    """This class requires a XDR series with routers with 1.0.10 firmware or above"""
+
+    def __init__(self, config):
+        """Initialize the scanner."""
+        self.stok = ''
+        self.sysauth = ''
+        super(XDRSeriesTplinkDeviceScanner, self).__init__(config)
+
+    def _get_auth_tokens(self):
+        """Retrieve auth tokens from the router."""
+        _LOGGER.info("Retrieving auth tokens...")
+        
+        url = 'http://{}'.format(self.host)
+        referer = url
+        data = {"method":"do","login":{"password":"{}".format(self.password)}}
+        
+        response = requests.post(url, headers={REFERER: referer}, data='{}'.format(data), timeout=4)
+        
+        try:
+            self.stok = response.json().get('stok')
+            return True
+        except (ValueError, KeyError, AttributeError) as _:
+            _LOGGER.error("Couldn't fetch auth tokens! Response was: %s",
+                          response.text)
+            return False
+            
+    def _get_device_name(self):
+        """Get mac address and device name dictionary"""
+        
+        if self.last_results:
+            self.mac2name = self.last_results
+            
+            return True
+        
+        return False
+        
+    def _update_info(self):
+        """Ensure the information from the TP-Link router is up to date.
+        Return boolean if scanning successful.
+        """
+        _LOGGER.info("[XDRSeries] Loading wireless clients...")
+
+        if (self.stok == ''):
+            self._get_auth_tokens()
+        
+        url = 'http://{}/stok={}/ds'.format(self.host, self.stok)
+        referer = 'http://{}'.format(self.host)
+        data = '{"hosts_info":{"table":"online_host"},"method":"get"}'
+        
+        response = requests.post(url, headers={REFERER:referer}, data=data, timeout=5)
+        
+        try:
+            json_response = response.json()
+            
+            if json_response.get('error_code') == 0:
+                result = response.json().get('hosts_info').get('online_host')
+            else:
+                _LOGGER.error(
+                    "An unknown error happened while fetching data")
+                return False
+        except ValueError:
+            _LOGGER.error("Router didn't respond with JSON. "
+                          "Check if credentials are correct")
+            return False
+            
+        if result:
+#            restructure result
+            result_cache = []
+            for i in result:
+                result_cache.append(list(i.values())[0])
+            
+            
+            self.last_results = {
+                device['mac'].replace('-', ':'): device['hostname']
+                for device in result_cache
+                }
+                
+            return True
+            
+        return False
