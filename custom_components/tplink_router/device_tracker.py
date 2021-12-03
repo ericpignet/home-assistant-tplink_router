@@ -46,7 +46,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 
 def get_scanner(hass, config):
     """Validate the configuration and return a TP-Link scanner."""
-    for cls in [XDRSeriesTplinkDeviceScanner
+    for cls in [XDRSeriesTplinkDeviceScanner,
                 VR600TplinkDeviceScanner,
                 EAP225TplinkDeviceScanner,
                 N600TplinkDeviceScanner,
