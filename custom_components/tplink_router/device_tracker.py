@@ -53,7 +53,8 @@ def get_scanner(hass, config):
                 C7TplinkDeviceScanner,
                 C9TplinkDeviceScanner,
                 OldC9TplinkDeviceScanner,
-                OriginalTplinkDeviceScanner]:
+                OriginalTplinkDeviceScanner
+                ]:
         scanner = cls(config[DOMAIN])
         if scanner.success_init:
             return scanner
@@ -79,7 +80,8 @@ class TplinkDeviceScanner(DeviceScanner):
         self.host = host
         self.username = username
         self.password = password
-
+        
+        self.mac2name = None
         self.last_results = {}
         self.success_init = self._update_info()
 
@@ -90,8 +92,12 @@ class TplinkDeviceScanner(DeviceScanner):
 
     # pylint: disable=no-self-use
     def get_device_name(self, device):
-        """Firmware doesn't save the name of the wireless device.
-        Home Assistant will default to MAC address."""
+        """Support for device name feature. (only implemented in XDR Series)"""
+        
+        if device:
+            self._get_device_name()
+            return self.mac2name.get(device)
+    
         return None
 
     def get_base64_cookie_string(self):
@@ -571,7 +577,7 @@ class VR600TplinkDeviceScanner(TplinkDeviceScanner):
             _LOGGER.error("Error %s from router", page.response)
             return False
 
-        split = response.text.index('var token=') + len('var token=\"') 
+        split = response.text.index('var token=') + len('var token=\"')
         token = response.text[split:split+30]
 
         self.token = token
@@ -669,8 +675,8 @@ class VR600TplinkDeviceScanner(TplinkDeviceScanner):
             self.token = ''
             return False
         return True
-    
-    
+
+
 class XDRSeriesTplinkDeviceScanner(TplinkDeviceScanner):
     """This class requires a XDR series with routers with 1.0.10 firmware or above"""
 
@@ -697,8 +703,17 @@ class XDRSeriesTplinkDeviceScanner(TplinkDeviceScanner):
             _LOGGER.error("Couldn't fetch auth tokens! Response was: %s",
                           response.text)
             return False
+            
+    def _get_device_name(self):
+        """Get mac address and device name dictionary"""
         
-
+        if self.last_results:
+            self.mac2name = self.last_results
+            
+            return True
+        
+        return False
+        
     def _update_info(self):
         """Ensure the information from the TP-Link router is up to date.
         Return boolean if scanning successful.
@@ -734,11 +749,12 @@ class XDRSeriesTplinkDeviceScanner(TplinkDeviceScanner):
             for i in result:
                 result_cache.append(list(i.values())[0])
             
+            
             self.last_results = {
-                device['mac'].replace('-', ':'): device['mac']
+                device['mac'].replace('-', ':'): device['hostname']
                 for device in result_cache
                 }
+                
             return True
             
         return False
-
