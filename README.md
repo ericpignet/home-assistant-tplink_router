@@ -46,7 +46,7 @@ See the [device tracker integration page](/integrations/device_tracker/) for ins
 
 For Archer D9 model the default IP is 192.168.1.1.
 
-For XDR Series, the password encryption algorithm is still unknown, so a encrypted password has to be used:
+For XDR Series, the password encryption algorithm is still unknown, so an encrypted password has to be used:
 1. Go to the login page of your router. (default: 192.168.0.1)
 2. Type in the password you use to login into the password field.
 3. Open the Network monitor of your browser (usually by pressing F12 and then clicking on "Network").
