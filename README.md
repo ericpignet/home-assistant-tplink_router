@@ -44,8 +44,16 @@ For Archer C9 models running firmware version 150811 or later please use the enc
 
 See the [device tracker integration page](/integrations/device_tracker/) for instructions how to configure the people to be tracked.
 
-For Archer D9 model the default IP is 192.168.1.1, the username is not necessary and you can leave that field blank.
+For Archer D9 model the default IP is 192.168.1.1.
 
+For XDR Series, the password encryption algorithm is still unknown, so a encrypted password has to be used:
+1. Go to the login page of your router. (default: 192.168.0.1)
+2. Type in the password you use to login into the password field.
+3. Open the Network monitor of your browser (usually by pressing F12 and then clicking on "Network").
+4. Clear the screen before pressing "Confirm"
+5. Upon successful login, right click on the first one and select "Copy as cURL"
+6. Paste the content somewhere else and copy the value of the password in the last line without the quotation marks
+   (example: --data-binary '{"method":"do","login":{"password":"**SoMeEnCrYpTeDtExT**"}}')
 ## Supported devices
 
 Devices originally supported include the following:
@@ -61,6 +69,7 @@ Additional devices added since the removal from Home Assistant:
 - TPLink VR600 with latest firmware
 - TL-WR840N
 - TL-WDR4900
+- XDR-1850
 
 If your device is not in the list, you can still give it a try and let me know if it works or not, I'll update the documentation.
 
